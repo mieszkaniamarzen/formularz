@@ -110,9 +110,9 @@ src="https://www.facebook.com/tr?id=1055426794907633&ev=PageView&noscript=1"
           </p>
         </b-tab>
         <b-tab :title="'Arkusz na dzień ' + today" active>
-          <table border="1" @click="$forceUpdate()">
+          <table border="1" @click="$forceUpdate()" :data="initLogic()">
             <tr v-for="r in rows">
-              <td v-for="cell in r">wal: {{cell}}</td>
+              <td v-for="cell in r">{{cell}}</td>
             </tr>
           </table>
           <pre>{{JSON.stringify(rows)}}</pre>
@@ -153,14 +153,23 @@ new Vue({
   methods: {
     initLogic() {
       stepOne()
+        .then(stepTwo)
+        .then(stepFive.bind(this))
 
       function stepOne() {
-        return fetch("/creds.json").then(r => r.json()).then(stepTwo)
+        return fetch("/creds.json", {
+          "mode": "cors",
+        }).then(toJson)
+      }
+
+      function toJson(r) {
+        return r.json()
       }
 
       function stepTwo(credsJson) {
         var resp = fetch("https://api.baserow.io/api/user/token-auth/", {
           method: "post",
+          "mode": "cors",
           headers: {
             "Content-Type": "application/json"
           },
@@ -169,37 +178,36 @@ new Vue({
             "password": "P4SSWORDIE"
           })
         })
-          .then(r => r.json())
-          .then(r => (console.info(r), r));
+          .then(toJson)
+          // .then(r => (console.info(r), r));
         resp.then(stepThree)
-        resp.then(stepFour).then(stepFive)
-        return resp
+        return resp.then(stepFour)
       }
 
       function stepThree(auth) {
-        return fetch("//api.baserow.io/api/database/fields/table/3904/", {
+        return fetch("https://api.baserow.io/api/database/fields/table/3904/", {
           "method": "GET",
           // "credentials": "include",
-          // "mode": "cors",
+          "mode": "cors",
           "referrer": "https://baserow.io/database/2283/table/3903",
           "headers": {
             "Accept": "application/json",
             "Authorization": "JWT " + auth.token
           },
-        }).then(r => r.json())
+        }).then(toJson)
       }
 
       function stepFour(auth) {
-        return fetch("//api.baserow.io/api/database/views/grid/4076/?limit=80&offset=0&includes=field_options", {
+        return fetch("https://api.baserow.io/api/database/views/grid/4076/?limit=80&offset=0&includes=field_options", {
           "method": "GET",
           // "credentials": "include",
-          // "mode": "cors",
+          "mode": "cors",
           "referrer": "https://baserow.io/database/2283/table/3903",
           "headers": {
             "Accept": "application/json",
             "Authorization": "JWT " + auth.token
           },
-        }).then(r => r.json())
+        }).then(toJson)
       }
 
       function keysToRows(obj) {
@@ -210,10 +218,8 @@ new Vue({
         // console.table(data.results)
         this.rows = data.results.map(keysToRows)
         console.info('new rows', this.rows)
-        debugger
         console.table(this.rows)
       }
-      
     }
   },
 })
