@@ -162,7 +162,7 @@ new Vue({
         .then(stepFive.bind(this))
 
       function stepOne() {
-        return fetch("/creds.json", {
+        return fetch("creds.json", {
           "mode": "cors",
         }).then(toJson)
       }
